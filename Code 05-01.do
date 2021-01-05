@@ -3,18 +3,37 @@ cd "C:\Users\David Mengelle\Desktop\Uganda database\Data\Data 2012\UGA_2012_SAGE
 /* I import the data from int_access_health file and I check that it corresponds with the one you have described (n=21 257) */
 insheet using "int_access_health.csv"
 
+/*I merged int_access_health with int_cohesion_empow*/
+insheet using "int_cohesion_empow.csv",clear
+sort hhid
+save "int_cohesion_empow.dta", replace
+
+insheet using "int_access_health.csv",clear
+sort hhid
+merge m:1 hhid using "int_cohesion_empow.dta"
+drop _merge
+/*Normally, one member of each household has answered to the questions of empowerment*/
+save "int_access_health.dta,replace
+
+/*I started replacing the missing values in all the dependent variables that you listed in the R file, first checking where they were*/
+summ age
+histogram hh1_q2, discrete
+(start=0, width=1)
+/*we observe that our population is rather young*/
+
+replace hh1_q5=. if hh1_q5>2   
+replace hh1_q19=. if hh1_q19>2 
+
+
+
+
+
 /*create disabled variable*/
 tabulate hh1_q19
 summarize hh1_q19
 generate disabled=.
 replace disabled=1 if hh1_q19==1
 replace disabled=0 if hh1_q19==2
-
-/*create  variable*/
-
-
-
-
 
 
 /*I started renaming some variables
