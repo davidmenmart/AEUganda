@@ -1,0 +1,133 @@
+cd "C:\Users\David Mengelle\Desktop\Uganda database\Data\Data 2012\UGA_2012_SAGE-BL_v01_M_CSV"
+
+/*import the data from int_access_empow file and transform it in dta*/
+
+insheet using "int_cohesion_empow.csv",clear
+sort hhid 
+save "int_cohesion_empow.dta", replace
+
+/*import the data from int_access_health file, transform it in dta and then
+merge it with int_access_empow database*/
+insheet using "int_access_health.csv",clear
+sort hhid
+merge m:1 hhid using "int_cohesion_empow.dta"
+drop _merge
+
+duplicates report
+
+/*save the merged database*/
+save "applied.dta",replace
+
+/*used the database SAGE_HHWEIGHTSV2.csv, create dummy variables from 
+targetingmethod and eligibilitystatus variables and merge it with the
+upper new database */
+insheet using "SAGE_HHWEIGHTSV2.csv",clear
+summ
+sort hhid
+
+tab targetingmethod, gen(var)
+rename var1 OAG
+rename var2 VGFG
+
+tab eligilitystatus, gen(var)
+rename var1 Eligible
+rename var2 Ineligible
+
+/* we drop these two variables for technical purposes */
+drop targetingmethod eligilitystatus
+
+save "SAGE_HHWEIGHTSV2.dta",replace
+
+use "C:\Users\David Mengelle\Desktop\Uganda database\Data\Data 2012\UGA_2012_SAGE-BL_v01_M_CSV\applied.dta",clear
+
+merge m:1 hhid using "SAGE_HHWEIGHTSV2.dta"
+drop _merge
+
+summarize
+
+/*
+gen keyvar = 1 if var1==1
+gen keyvar = 2 if var2==0
+*/
+
+histogram hh1_q2, discrete
+
+local varlist "hh1_q2 hh2_q3 hh2_q4 hh2_q5 hh2_q7 hh2_q8 hh2_q9 hh2_q10 hh2_q11 hh4_q2 hh4_q3 hh4_q4 hh4_q5 hh4_q6 hh4_q7 hh4_q9 hh4_q10 hh4_q11"
+foreach i of varlist `varlist'{
+	summ `i' if `i'==98
+	summ `i' if `i'==.
+	replace `i' =. if  `i'== 98 
+}
+
+local varlist2 "hh4_q16 hh4_q17 hh4_q18 hh4_q19 hh4_q20"
+foreach i of varlist `varlist2'{
+	summ `i' if `i'==998
+	summ `i' if `i'==.
+	replace `i' =. if `i' == 998
+}
+
+
+
+
+
+/*Check Eligibity Status for 3 years*/
+
+cd "C:\Users\David Mengelle\Desktop\Uganda database\Data\Data 2012\UGA_2012_SAGE-BL_v01_M_CSV"
+
+insheet using "SAGE_HHWEIGHTSV2.csv",clear
+tabulate eligilitystatus targetingmethod
+
+cd "C:\Users\David Mengelle\Desktop\Uganda database\Data\Data 2013\UGA_2013_SAGE-ML_v01_M_CSV"
+
+insheet using "SAGE_HHWEIGHTSV2.csv",clear
+tabulate eligilitystatus targetingmethod
+
+cd "C:\Users\David Mengelle\Desktop\Uganda database\Data\Data 2014\UGA_2014_SAGE-EL_v01_M_CSV"
+
+insheet using "SAGE_HHWEIGHTSV2.csv",clear
+tabulate targetingmethod
+
+
+
+/*we observe that our population is rather young*/
+
+replace hh1_q5=. if hh1_q5>2   
+replace hh1_q19=. if hh1_q19>2 
+
+
+/*create disabled binary variable*/
+
+generate disabled=.
+replace disabled=1 if hh1_q19==1
+replace disabled=0 if hh1_q19==2
+
+summarize disabled
+
+/*renaming some variables (not finished)
+rename hh1_q2 age
+rename hh1_q5 sex
+rename hh1_q6 Famrelation
+rename hh1_q19 Disability
+rename hh2_q3 School 
+rename hh2_q4 PresentGrade
+rename hh2_q5 PastGrade
+rename hh2_q7 DaysMiss
+rename hh2_q8 ReasonMiss
+rename hh2_q9 ReasonNotSchool
+rename hh2_q10 HighestGrade
+rename hh2_q11 ReasonLeave
+rename hh4_q2
+rename hh4_q3
+rename hh4_q4
+rename hh4_q5
+rename hh4_q6
+rename hh4_q7
+rename hh4_q9
+rename hh4_q10
+rename hh4_q11
+rename hh4_q16
+rename hh4_q17
+rename hh4_q18
+rename hh4_q19
+rename hh4_q20
+*/
